@@ -17,6 +17,8 @@ type Pool struct {
 	maxLen uint
 }
 
+var DbgElibPool = false
+
 // ErrTooLarge is passed to panic if pool overflows maxLen
 var ErrPoolTooLarge = errors.New("pool: too large")
 
@@ -32,6 +34,11 @@ func (p *Pool) GetIndex(max uint) (i uint) {
 	if p.maxLen != 0 && i >= p.maxLen {
 		panic(ErrPoolTooLarge)
 	}
+
+	if DbgElibPool {
+		DbgElibLog("GetIndex:arg max=%d\n", max)
+		DbgElibLog("GetIndex:freelen=%d idx=%d\n", p.FreeLen(), i)
+	}
 	return
 }
 
@@ -40,6 +47,11 @@ func (p *Pool) PutIndex(i uint) (ok bool) {
 	if ok = !p.freeBitmap.Get(i); ok {
 		p.freeIndices = append(p.freeIndices, uint32(i))
 		p.freeBitmap = p.freeBitmap.Orx(i)
+
+		if DbgElibPool {
+			DbgElibLog("PutIndex:arg i=%d\n", i)
+			DbgElibLog("PutIndex:freelen=%d\n", p.FreeLen())
+		}
 	}
 	return
 }
@@ -55,3 +67,23 @@ func (p *Pool) IsFree(i uint) (ok bool) { return p.freeBitmap.Get(i) }
 func (p *Pool) FreeLen() uint           { return uint(len(p.freeIndices)) }
 func (p *Pool) MaxLen() uint            { return p.maxLen }
 func (p *Pool) SetMaxLen(x uint)        { p.maxLen = x }
+
+func (p *Pool) ForeachFreeIndex(f func(p *Pool, i uint)) {
+	for fi := range p.freeIndices {
+		if p.IsFree(uint(fi)) {
+			f(p, uint(fi))
+		}
+	}
+}
+
+func (p *Pool) ForeachUsedIndex(f func(i uint)) {
+	p.freeBitmap.ForeachSetBit(f)
+}
+
+func (p *Pool) BitmapString() string {
+	return (p.freeBitmap.String())
+}
+
+func (p *Pool) HexmapString() string {
+	return (p.freeBitmap.HexString())
+}
