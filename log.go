@@ -4,23 +4,7 @@
 
 package elib
 
-import (
-	"fmt"
-)
-
 type Logger interface {
 	Logf(format string, args ...interface{})
 	Logln(args ...interface{})
-}
-
-var DbgElib bool = false
-
-func DbgElibLog(argfmt string, arg ...interface{}) {
-	if DbgElib {
-		fmt.Printf(argfmt, arg...)
-	}
-}
-
-func DbgElibLogEnable(f bool) {
-	DbgElib = f
 }
